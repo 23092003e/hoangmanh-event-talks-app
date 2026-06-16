@@ -3,6 +3,8 @@ let allNotes = [];
 let selectedNotes = new Map(); // stores Map of id -> note object
 let currentTypeFilter = 'all';
 let searchQuery = '';
+let visibleLimit = 15;
+let scrollObserver = null;
 
 // DOM Elements
 const notesContainer = document.getElementById('notes-container');
@@ -219,6 +221,43 @@ function setupEventListeners() {
     renderNotes();
   });
   
+  // Empty State Action
+  const clearSearchBtnEmpty = document.getElementById('clear-search-btn-empty');
+  if (clearSearchBtnEmpty) {
+    clearSearchBtnEmpty.addEventListener('click', () => {
+      searchInput.value = '';
+      searchQuery = '';
+      currentTypeFilter = 'all';
+      
+      // Update pills UI
+      typeFilters.querySelectorAll('button').forEach(btn => {
+        if (btn.dataset.type === 'all') {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      
+      renderNotes();
+      renderTypeFilters(); // Redraw filter counts
+    });
+  }
+
+  // Handle Input for Tweet Composer
+  const inputHandle = document.getElementById('input-handle');
+  const userHandleEl = document.querySelector('.user-handle');
+  if (inputHandle) {
+    inputHandle.addEventListener('input', (e) => {
+      let handle = e.target.value.trim();
+      if (handle && !handle.startsWith('@')) {
+        handle = '@' + handle;
+      }
+      if (userHandleEl) {
+        userHandleEl.textContent = handle || '@gcp_updates';
+      }
+    });
+  }
+
   // Multi-Selection Logic
   cancelSelectionBtn.addEventListener('click', clearAllSelection);
   tweetSelectedBtn.addEventListener('click', () => openTweetModal(null));
@@ -245,13 +284,15 @@ function renderTypeFilters() {
   const container = document.getElementById('type-filters');
   const activeType = currentTypeFilter;
   
-  // Keep "All" button
-  container.innerHTML = `<button class="pill ${activeType === 'all' ? 'active' : ''}" data-type="all">All</button>`;
+  // Calculate counts based on current list
+  const totalCount = allNotes.length;
+  container.innerHTML = `<button class="pill ${activeType === 'all' ? 'active' : ''}" data-type="all">All (${totalCount})</button>`;
   
   // Get unique types and sort them
   const types = [...new Set(allNotes.map(note => note.type))].sort();
   
   types.forEach(type => {
+    const count = allNotes.filter(note => note.type === type).length;
     // Map to user-friendly label
     const label = type === 'Feature' ? 'Features' 
                 : type === 'Issue' ? 'Issues' 
@@ -261,13 +302,16 @@ function renderTypeFilters() {
                 : type === 'Change' ? 'Changes'
                 : type;
     
-    container.innerHTML += `<button class="pill ${activeType === type ? 'active' : ''}" data-type="${type}">${label}</button>`;
+    container.innerHTML += `<button class="pill ${activeType === type ? 'active' : ''}" data-type="${type}">${label} (${count})</button>`;
   });
 }
 
 // Rendering Logic
-function renderNotes() {
-  notesContainer.innerHTML = '';
+function renderNotes(resetLimit = true) {
+  if (resetLimit) {
+    visibleLimit = 15;
+    notesContainer.innerHTML = '';
+  }
   
   // Filter notes
   const filteredNotes = allNotes.filter(note => {
@@ -289,16 +333,32 @@ function renderNotes() {
   
   // Toggle empty state
   if (filteredNotes.length === 0) {
+    notesContainer.innerHTML = '';
     emptyState.classList.remove('hidden');
     selectAllBtn.classList.add('hidden');
+    if (scrollObserver) {
+      scrollObserver.disconnect();
+    }
     return;
   } else {
     emptyState.classList.add('hidden');
     selectAllBtn.classList.remove('hidden');
   }
+
+  // Slice based on visibleLimit
+  const notesToRender = filteredNotes.slice(0, visibleLimit);
+  
+  // Clean up previous sentinel if any
+  const oldSentinel = document.getElementById('scroll-sentinel');
+  if (oldSentinel) {
+    oldSentinel.remove();
+  }
+
+  const currentRenderedCount = resetLimit ? 0 : notesContainer.querySelectorAll('.note-card').length;
+  const newNotesToRender = notesToRender.slice(currentRenderedCount);
   
   // Render cards
-  filteredNotes.forEach((note, index) => {
+  newNotesToRender.forEach((note, idx) => {
     const isSelected = selectedNotes.has(note.id);
     const card = document.createElement('article');
     card.className = `note-card ${isSelected ? 'selected' : ''}`;
@@ -363,12 +423,48 @@ function renderNotes() {
         toggleSelection(note, card);
       }
     });
+
+    // Keyboard accessibility (a11y)
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleSelection(note, card);
+      }
+    });
     
     // Add entry animation delays
-    card.style.animation = `slideIn 0.3s ease forwards ${index * 0.04}s`;
+    card.style.animation = `slideIn 0.3s ease forwards ${idx * 0.04}s`;
     
     notesContainer.appendChild(card);
   });
+  
+  // Set up scroll observer
+  if (scrollObserver) {
+    scrollObserver.disconnect();
+  }
+  
+  if (filteredNotes.length > visibleLimit) {
+    const sentinel = document.createElement('div');
+    sentinel.id = 'scroll-sentinel';
+    sentinel.className = 'scroll-sentinel';
+    sentinel.style.display = 'flex';
+    sentinel.style.justifyContent = 'center';
+    sentinel.style.padding = '20px';
+    sentinel.innerHTML = `
+      <svg class="spinning" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; color: var(--accent-color);">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+      </svg>
+    `;
+    notesContainer.appendChild(sentinel);
+    
+    scrollObserver = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        visibleLimit += 15;
+        renderNotes(false);
+      }
+    }, { rootMargin: '200px' });
+    scrollObserver.observe(sentinel);
+  }
   
   // Show / hide the floating selection bar
   updateSelectionBar();
@@ -467,6 +563,17 @@ function openTweetModal(singleNote = null) {
       <option value="multi-brief">Daily Digest (Default)</option>
       <option value="multi-hype">BigQuery Upgrades 🔥</option>
     `;
+  }
+  
+  // Sync the user handle in the preview box with input value on opening
+  const inputHandle = document.getElementById('input-handle');
+  const userHandleEl = document.querySelector('.user-handle');
+  if (inputHandle && userHandleEl) {
+    let handle = inputHandle.value.trim();
+    if (handle && !handle.startsWith('@')) {
+      handle = '@' + handle;
+    }
+    userHandleEl.textContent = handle || '@gcp_updates';
   }
   
   // Generate initial draft

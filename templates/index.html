@@ -160,6 +160,7 @@
         </svg>
         <h3>No updates found</h3>
         <p>Try clearing your search filters or force refreshing the feed.</p>
+        <button id="clear-search-btn-empty" class="btn btn-primary btn-sm" style="margin-top: 8px;">Clear Filters & Search</button>
       </div>
 
       <!-- Actual notes container -->
@@ -226,13 +227,19 @@
       </header>
       <div class="modal-body">
         <!-- Template Selection -->
-        <div class="template-selector-container">
-          <label for="tweet-template">Draft Style:</label>
-          <select id="tweet-template">
-            <option value="brief">Brief Spotlight (Default)</option>
-            <option value="detailed">Highlights Summary</option>
-            <option value="hype">Excited / Developer Style</option>
-          </select>
+        <div class="template-selector-container" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label for="tweet-template">Draft Style:</label>
+            <select id="tweet-template">
+              <option value="brief">Brief Spotlight (Default)</option>
+              <option value="detailed">Highlights Summary</option>
+              <option value="hype">Excited / Developer Style</option>
+            </select>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="input-handle" style="font-size: 0.85rem;">Handle:</label>
+            <input type="text" id="input-handle" placeholder="@gcp_updates" value="@gcp_updates" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius-sm); color: var(--text-primary); font-family: var(--font-body); font-size: 0.85rem; outline: none; width: 130px; transition: var(--transition-smooth);" />
+          </div>
         </div>
 
         <textarea id="tweet-textarea" placeholder="What's happening in BigQuery?" maxlength="400" aria-label="Tweet text"></textarea>
