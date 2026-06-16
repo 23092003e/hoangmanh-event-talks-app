@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Explore, filter, and share Google BigQuery release notes. Select updates and share them on X (Twitter).">
+  <title>BigQuery Release Notes Explorer</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/%3E%3C/svg%3E">
+</head>
+<body class="dark-theme">
+  <!-- Top Progress Bar for refresh loading indicator -->
+  <div id="top-loading-bar" class="loading-bar"></div>
+
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-area">
+        <svg class="app-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-4H6v-2h4V7h2v4h4v2h-4v4z"/>
+        </svg>
+        <div class="title-wrapper">
+          <h1>BigQuery Release Notes</h1>
+          <span class="subtitle">Stay updated with Google Cloud BigQuery releases</span>
+        </div>
+      </div>
+      
+      <div class="actions-area">
+        <div class="status-indicator">
+          <span class="status-dot green"></span>
+          <span id="sync-status">Checking for updates...</span>
+        </div>
+        
+        <button id="refresh-btn" class="btn btn-primary" title="Refresh Release Notes" aria-label="Refresh Release Notes">
+          <svg class="refresh-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <span>Refresh</span>
+        </button>
+        
+        <button id="theme-toggle" class="btn btn-icon" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-layout">
+    <!-- Sidebar Filters -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3>Search Notes</h3>
+        <div class="search-box">
+          <input type="text" id="search-input" placeholder="Type keywords..." aria-label="Search release notes">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Filter by Type</h3>
+        <div class="filter-pills" id="type-filters">
+          <button class="pill active" data-type="all">All</button>
+          <button class="pill" data-type="Feature">Features</button>
+          <button class="pill" data-type="Issue">Issues</button>
+          <button class="pill" data-type="Deprecated">Deprecated</button>
+          <button class="pill" data-type="General">General</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Quick Stats</h3>
+        <div class="stats-panel">
+          <div class="stat-card">
+            <span class="stat-num" id="total-count">0</span>
+            <span class="stat-label">Total Notes</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="feature-count">0</span>
+            <span class="stat-label">Features</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num text-danger" id="issue-count">0</span>
+            <span class="stat-label">Issues</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <p>BigQuery Release Notes App</p>
+        <p class="copyright">&copy; 2026 Developer Tool</p>
+      </div>
+    </aside>
+
+    <!-- Release Notes Feed -->
+    <section class="feed-section">
+      <div class="feed-header">
+        <h2 id="feed-title-display">Recent Updates</h2>
+        <div class="feed-actions">
+          <button id="select-all-btn" class="btn btn-outline btn-sm">Select All Visited</button>
+          <button id="clear-selection-btn" class="btn btn-outline btn-sm hidden">Deselect All</button>
+        </div>
+      </div>
+
+      <!-- Loading Placeholder / Skeleton -->
+      <div id="loading-skeleton" class="skeleton-container hidden">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+
+      <!-- Error view -->
+      <div id="error-view" class="error-view hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="error-icon">
+          <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <h3>Failed to fetch release notes</h3>
+        <p id="error-message">Unknown error occurred</p>
+        <button id="retry-btn" class="btn btn-primary">Try Again</button>
+      </div>
+
+      <!-- Empty state -->
+      <div id="empty-state" class="empty-state hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-icon">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+        </svg>
+        <h3>No updates found</h3>
+        <p>Try clearing your search filters or force refreshing the feed.</p>
+      </div>
+
+      <!-- Actual notes container -->
+      <div id="notes-container" class="notes-container"></div>
+    </section>
+  </main>
+
+  <!-- Floating Selection Action Bar -->
+  <div id="selection-bar" class="selection-bar hidden">
+    <div class="selection-info">
+      <span class="selection-count"><strong id="selected-count">0</strong> updates selected</span>
+    </div>
+    <div class="selection-actions">
+      <button id="tweet-selected-btn" class="btn btn-accent">
+        <svg class="twitter-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+        <span>Tweet Selected</span>
+      </button>
+      <button id="cancel-selection-btn" class="btn btn-ghost btn-sm">Clear Selection</button>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <dialog id="detail-modal" class="custom-modal" closedby="any">
+    <div class="modal-card">
+      <header class="modal-header">
+        <div class="modal-meta">
+          <span id="detail-tag" class="note-tag">Feature</span>
+          <span id="detail-date" class="note-date">June 15, 2026</span>
+        </div>
+        <button class="modal-close-btn" data-close title="Close modal" aria-label="Close modal">&times;</button>
+      </header>
+      <div class="modal-body">
+        <div id="detail-content" class="note-details-full">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <a id="detail-link" href="#" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+          <span>View Official Doc</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="external-link-icon">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </a>
+        <button id="detail-tweet-btn" class="btn btn-accent btn-sm">
+          <svg class="twitter-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          <span>Tweet This</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Tweet Composer Modal -->
+  <dialog id="tweet-modal" class="custom-modal" closedby="any">
+    <div class="modal-card">
+      <header class="modal-header">
+        <h3>Tweet Composer</h3>
+        <button class="modal-close-btn" data-close title="Close modal" aria-label="Close modal">&times;</button>
+      </header>
+      <div class="modal-body">
+        <!-- Template Selection -->
+        <div class="template-selector-container">
+          <label for="tweet-template">Draft Style:</label>
+          <select id="tweet-template">
+            <option value="brief">Brief Spotlight (Default)</option>
+            <option value="detailed">Highlights Summary</option>
+            <option value="hype">Excited / Developer Style</option>
+          </select>
+        </div>
+
+        <textarea id="tweet-textarea" placeholder="What's happening in BigQuery?" maxlength="400" aria-label="Tweet text"></textarea>
+        
+        <div class="character-counter-row">
+          <div class="character-progress">
+            <svg class="progress-ring" width="24" height="24">
+              <circle class="progress-ring-bg" stroke="#e2e8f0" stroke-width="2" fill="transparent" r="10" cx="12" cy="12"/>
+              <circle class="progress-ring-indicator" stroke="#3b82f6" stroke-width="2.5" fill="transparent" r="10" cx="12" cy="12"/>
+            </svg>
+            <span id="char-count-text">280</span>
+          </div>
+          <span id="char-warning" class="char-warning hidden">Limit exceeded! Max 280 characters for post.</span>
+        </div>
+
+        <div class="tweet-preview-box">
+          <div class="tweet-preview-header">
+            <div class="twitter-avatar"></div>
+            <div class="twitter-names">
+              <span class="display-name">Developer Update</span>
+              <span class="user-handle">@gcp_updates</span>
+            </div>
+          </div>
+          <div class="tweet-preview-body" id="tweet-preview-text">
+            <!-- Syncs with textarea -->
+          </div>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button id="copy-tweet-btn" class="btn btn-outline btn-sm">Copy Text</button>
+        <button id="post-tweet-btn" class="btn btn-accent btn-sm">
+          <svg class="twitter-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          <span>Post to X</span>
+        </button>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast hidden">
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
