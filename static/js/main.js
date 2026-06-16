@@ -230,6 +230,12 @@ function setupEventListeners() {
   
   copyTweetBtn.addEventListener('click', copyTweetToClipboard);
   postTweetBtn.addEventListener('click', postTweetToTwitter);
+  
+  // CSV Export
+  const exportCsvBtn = document.getElementById('export-csv-btn');
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', exportToCSV);
+  }
 }
 
 // Dynamic Type Filters Generation
@@ -313,6 +319,13 @@ function renderNotes() {
       </div>
       
       <div class="note-footer">
+        <button class="card-action-btn copy-card-btn" title="Copy text to clipboard">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px;">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>Copy</span>
+        </button>
         <button class="card-action-btn read-more-btn">
           <span>Read Full</span>
         </button>
@@ -330,6 +343,7 @@ function renderNotes() {
       const checkbox = e.target.closest('.selection-checkbox');
       const tweetBtn = e.target.closest('.tweet-btn');
       const readMoreBtn = e.target.closest('.read-more-btn');
+      const copyBtn = e.target.closest('.copy-card-btn');
       
       if (checkbox) {
         toggleSelection(note, card);
@@ -339,6 +353,9 @@ function renderNotes() {
       } else if (readMoreBtn) {
         e.stopPropagation();
         openDetailModal(note);
+      } else if (copyBtn) {
+        e.stopPropagation();
+        copyCardToClipboard(note);
       } else {
         // Toggle selection on general card click to make it easy
         toggleSelection(note, card);
@@ -585,4 +602,70 @@ function showToast(message) {
       toast.classList.add('hidden');
     }, 300);
   }, 3000);
+}
+
+// Copy single release note text
+function copyCardToClipboard(note) {
+  const text = `BigQuery Update (${note.date}) - [${note.type}]:\n${note.content_text}`;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast("Update copied to clipboard!");
+  }).catch(err => {
+    console.error("Failed to copy update:", err);
+    showToast("Failed to copy update");
+  });
+}
+
+// Export filtered notes to CSV
+function exportToCSV() {
+  // Filter allNotes exactly like renderNotes does
+  const filteredNotes = allNotes.filter(note => {
+    if (currentTypeFilter !== 'all' && note.type !== currentTypeFilter) {
+      return false;
+    }
+    if (searchQuery) {
+      const inTitle = note.date.toLowerCase().includes(searchQuery);
+      const inType = note.type.toLowerCase().includes(searchQuery);
+      const inContent = note.content_text.toLowerCase().includes(searchQuery);
+      return inTitle || inType || inContent;
+    }
+    return true;
+  });
+
+  if (filteredNotes.length === 0) {
+    showToast("No notes to export!");
+    return;
+  }
+
+  // Build CSV content
+  const headers = ["Date", "Type", "Text Content", "Link"];
+  const rows = [headers];
+
+  filteredNotes.forEach(note => {
+    // Escape double quotes by doubling them
+    const escape = (text) => `"${text.replace(/"/g, '""')}"`;
+    rows.push([
+      escape(note.date),
+      escape(note.type),
+      escape(note.content_text),
+      escape(note.link)
+    ]);
+  });
+
+  const csvContent = "\uFEFF" + rows.map(r => r.join(",")).join("\n"); // \uFEFF for BOM UTF-8
+
+  // Trigger download
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  
+  const dateStr = new Date().toISOString().split('T')[0];
+  link.setAttribute("download", `bigquery_release_notes_${dateStr}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  showToast("CSV exported successfully!");
 }
