@@ -12,7 +12,7 @@ const errorMessage = document.getElementById('error-message');
 const emptyState = document.getElementById('empty-state');
 const refreshBtn = document.getElementById('refresh-btn');
 const retryBtn = document.getElementById('retry-btn');
-const themeToggle = document.getElementById('theme-toggle');
+const themeSlider = document.getElementById('theme-slider');
 const syncStatus = document.getElementById('sync-status');
 const topLoadingBar = document.getElementById('top-loading-bar');
 
@@ -64,23 +64,23 @@ document.addEventListener('DOMContentLoaded', () => {
 // Theme Management
 function initTheme() {
   const savedTheme = localStorage.getItem('theme') || 'dark';
+  const slider = document.getElementById('theme-slider');
+  
   if (savedTheme === 'light') {
-    document.body.classList.remove('dark-theme');
-    document.body.classList.add('light-theme');
+    document.documentElement.classList.add('light-theme');
+    if (slider) slider.checked = true;
   } else {
-    document.body.classList.remove('light-theme');
-    document.body.classList.add('dark-theme');
+    document.documentElement.classList.remove('light-theme');
+    if (slider) slider.checked = false;
   }
 }
 
-function toggleTheme() {
-  if (document.body.classList.contains('dark-theme')) {
-    document.body.classList.remove('dark-theme');
-    document.body.classList.add('light-theme');
+function toggleTheme(e) {
+  if (e.target.checked) {
+    document.documentElement.classList.add('light-theme');
     localStorage.setItem('theme', 'light');
   } else {
-    document.body.classList.remove('light-theme');
-    document.body.classList.add('dark-theme');
+    document.documentElement.classList.remove('light-theme');
     localStorage.setItem('theme', 'dark');
   }
 }
@@ -196,7 +196,9 @@ function setErrorState(isError, message = '') {
 function setupEventListeners() {
   refreshBtn.addEventListener('click', () => fetchNotes(true));
   retryBtn.addEventListener('click', () => fetchNotes(true));
-  themeToggle.addEventListener('click', toggleTheme);
+  if (themeSlider) {
+    themeSlider.addEventListener('change', toggleTheme);
+  }
   
   // Real-time Search
   searchInput.addEventListener('input', (e) => {
