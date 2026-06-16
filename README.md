@@ -1,6 +1,13 @@
 # BigQuery Release Notes Explorer
 
+[![Live Demo](https://img.shields.io/badge/demo-live-blueviolet?style=for-the-badge)](https://hoangmanh-event-talks-app.vercel.app/)
+
 A modern, responsive, and feature-rich web application built with Python Flask and vanilla HTML5, CSS3, and JavaScript. The application fetches, caches, and parses Google BigQuery's release notes, providing real-time search, category filtering, and a custom Composer to tweet about specific updates.
+
+## 🌐 Live Deployment
+
+The application is deployed on Vercel and can be accessed at:
+👉 **[hoangmanh-event-talks-app.vercel.app](https://hoangmanh-event-talks-app.vercel.app/)**
 
 ## 🚀 Features
 
